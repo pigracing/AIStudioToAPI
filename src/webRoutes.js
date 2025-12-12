@@ -21,23 +21,31 @@ class WebRoutes {
         this.serverSystem = serverSystem;
         this.logger = serverSystem.logger;
         this.config = serverSystem.config;
+        this.loginAttempts = new Map(); // Track login attempts for rate limiting
     }
 
     /**
      * Configure session and login related middleware
      */
     setupSession(app) {
-        const sessionSecret
-            = (this.config.apiKeys && this.config.apiKeys[0])
-            || crypto.randomBytes(20).toString("hex");
+        // Generate a secure random session secret
+        const sessionSecret = crypto.randomBytes(32).toString("hex");
+
+        // Trust first proxy (Nginx) for secure cookies and IP forwarding
+        app.set("trust proxy", 1);
 
         app.use(cookieParser());
         app.use(
             session({
                 secret: sessionSecret,
                 resave: false,
-                saveUninitialized: true,
-                cookie: { secure: false, maxAge: 86400000 },
+                saveUninitialized: false,
+                cookie: {
+                    secure: process.env.NODE_ENV === "production",
+                    httpOnly: true,
+                    sameSite: "lax",
+                    maxAge: 86400000,
+                },
             })
         );
     }
@@ -60,18 +68,50 @@ class WebRoutes {
             if (req.session.isAuthenticated) {
                 return res.redirect("/");
             }
+            let errorMessage = "";
+            if (req.query.error === "1") {
+                errorMessage = '<p class="error">Invalid API Key!</p>';
+            } else if (req.query.error === "2") {
+                errorMessage = '<p class="error">Too many failed attempts. Please try again in 15 minutes.</p>';
+            }
             const loginHtml = this._loadTemplate("login.html", {
-                errorMessage: req.query.error ? '<p class="error">Invalid API Key!</p>' : "",
+                errorMessage,
             });
             res.send(loginHtml);
         });
 
         app.post("/login", (req, res) => {
+            const ip = req.ip;
+            const now = Date.now();
+            const attempts = this.loginAttempts.get(ip) || { count: 0, lastAttempt: 0 };
+
+            // Check if IP is rate limited (5 attempts in 15 minutes)
+            if (attempts.count >= 5 && now - attempts.lastAttempt < 15 * 60 * 1000) {
+                this.logger.warn(`[Auth] Rate limit exceeded for IP: ${ip}`);
+                return res.redirect("/login?error=2");
+            }
+
             const { apiKey } = req.body;
             if (apiKey && this.config.apiKeys.includes(apiKey)) {
-                req.session.isAuthenticated = true;
-                res.redirect("/");
+                // Clear failed attempts on successful login
+                this.loginAttempts.delete(ip);
+
+                // Regenerate session to prevent session fixation attacks
+                req.session.regenerate(err => {
+                    if (err) {
+                        this.logger.error(`[Auth] Session regeneration failed: ${err.message}`);
+                        return res.redirect("/login?error=1");
+                    }
+                    req.session.isAuthenticated = true;
+                    this.logger.info(`[Auth] Successful login from IP: ${ip}`);
+                    res.redirect("/");
+                });
             } else {
+                // Record failed login attempt
+                attempts.count++;
+                attempts.lastAttempt = now;
+                this.loginAttempts.set(ip, attempts);
+                this.logger.warn(`[Auth] Failed login attempt from IP: ${ip} (${attempts.count}/5)`);
                 res.redirect("/login?error=1");
             }
         });

@@ -1,8 +1,11 @@
-# Multi-stage build for optimized image size
-FROM node:18-slim AS base
+# Single-stage build with Node.js 24
+FROM node:24-slim
+
+WORKDIR /app
 
 # Install system dependencies required for Playwright/Camoufox browser
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     curl \
     unzip \
     libasound2 \
@@ -30,15 +33,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Production stage
-FROM base AS production
-
-WORKDIR /app
-
 # Copy package manifests and install production dependencies
 # Layer is cached unless package.json changes
 COPY package*.json ./
-RUN npm ci --only=production --no-audit --no-fund \
+RUN npm install --omit=dev --no-audit --no-fund \
     && npm cache clean --force
 
 # Download and extract Camoufox browser binary

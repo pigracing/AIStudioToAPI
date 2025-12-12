@@ -6,7 +6,7 @@ on:
     workflow_dispatch:
         inputs:
             custom_tag:
-                description: 'Custom tag (leave empty for preview-YYYYMMDD-HHMMSS)'
+                description: "Custom tag (leave empty for preview-YYYYMMDD-HHMMSS)"
                 required: false
                 type: string
 
@@ -26,6 +26,12 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
+
+            - name: Install cosign
+              if: github.event_name != 'pull_request'
+              uses: sigstore/cosign-installer@59acb6260d9c0ba8f4a2f9d9b48431a222b68e20 #v3.5.0
+              with:
+                  cosign-release: "v2.2.4"
 
             - name: Generate tag for manual build
               if: github.event_name == 'workflow_dispatch'
@@ -73,12 +79,9 @@ jobs:
                   build-args: VERSION=${{ env.VERSION }}
                   provenance: false
 
-            # Note: Cosign signing is disabled. To enable, install cosign first:
-            # - name: Install Cosign
-            #   uses: sigstore/cosign-installer@v3.5.0
-            # - name: Sign the published Docker image
-            #   if: github.event_name != 'pull_request'
-            #   env:
-            #       TAGS: ${{ steps.meta.outputs.tags }}
-            #       DIGEST: ${{ steps.build-and-push.outputs.digest }}
-            #   run: echo "${TAGS}" | tr ',' '\n' | xargs -I {} cosign sign --yes {}@${DIGEST}
+            - name: Sign the published Docker image
+              if: ${{ github.event_name != 'pull_request' }}
+              env:
+                  TAGS: ${{ steps.meta.outputs.tags }}
+                  DIGEST: ${{ steps.build-and-push.outputs.digest }}
+              run: echo ${{ steps.meta.outputs.tags }} | tr ',' '\n' | xargs -I {} cosign sign --yes {}@${DIGEST}

@@ -60,7 +60,6 @@
         .label {
             display: inline-block;
             width: 220px;
-            box-sizing: border-box;
         }
 
         .dot {
@@ -70,7 +69,16 @@
             border-radius: 50%;
             display: inline-block;
             margin-left: 10px;
+            vertical-align: middle;
             animation: blink 1s infinite alternate;
+        }
+
+        .dot.status-running {
+            background-color: #2ecc71;
+        }
+
+        .dot.status-error {
+            background-color: #e74c3c;
         }
 
         @keyframes blink {
@@ -98,6 +106,13 @@
             border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            line-height: 1.5;
+            min-height: 44px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
         }
 
         .action-group button:hover {
@@ -110,34 +125,45 @@
             border-color: #007bff;
         }
 
-        .action-group select {
-            background-color: #ffffff;
-            color: #000000;
-        }
-
         .lang-switcher {
             position: absolute;
-            top: 20px;
+            top: 35px;
             right: 20px;
-            background: #007bff;
+            background: transparent;
             border: none;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
+            color: #666;
+            padding: 8px;
             cursor: pointer;
-            font-size: 0.9em;
-            transition: opacity 0.3s;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .lang-switcher:hover {
-            opacity: 0.85;
+            color: #007bff;
+            transform: scale(1.1);
+        }
+
+        .lang-switcher svg {
+            display: block;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <button class="lang-switcher" onclick="toggleLanguage()">中文</button>
+        <button class="lang-switcher" onclick="toggleLanguage()" title="Switch Language">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m5 8 6 6"></path>
+                <path d="m4 14 6-6 2-3"></path>
+                <path d="M2 5h12"></path>
+                <path d="M7 2h1"></path>
+                <path d="m22 22-5-10-5 10"></path>
+                <path d="M14 18h6"></path>
+            </svg>
+        </button>
         <h1><span data-i18n="heading">Proxy Service Status</span> <span class="dot"></span></h1>
         <div id="status-section">
             <pre>
@@ -159,14 +185,15 @@
         <div id="actions-section" style="margin-top: 2em;">
             <h2 data-i18n="actionsPanel">Actions Panel</h2>
             <div class="action-group">
-                <select id="accountIndexSelect">{{accountOptions}}</select>
+                <select id="account-index-select">{{accountOptions}}</select>
                 <button onclick="switchSpecificAccount()" data-i18n="btnSwitchAccount">Switch Account</button>
                 <button onclick="toggleStreamingMode()" data-i18n="btnToggleStreaming">Toggle Streaming Mode</button>
                 <button onclick="toggleForceThinking()" data-i18n="btnToggleThinking">Toggle Force Thinking</button>
             </div>
         </div>
         <div id="log-section" style="margin-top: 2em;">
-            <h2><span data-i18n="realtimeLogs">Real-time Logs</span> (<span data-i18n="latestEntries">Latest</span> {{logCount}} <span data-i18n="entries">entries</span>)</h2>
+            <h2><span data-i18n="realtimeLogs">Real-time Logs</span> (<span data-i18n="latestEntries">Latest</span>
+                {{logCount}} <span data-i18n="entries">entries</span>)</h2>
             <pre id="log-container">{{logs}}</pre>
         </div>
     </div>
@@ -178,6 +205,7 @@
                 heading: 'Proxy Service Status',
                 serviceStatus: 'Service Status',
                 running: 'Running',
+                disconnected: 'Disconnected',
                 browserConnection: 'Browser Connection',
                 serviceConfig: 'Service Configuration',
                 streamingMode: 'Streaming Mode',
@@ -210,6 +238,7 @@
                 heading: '代理服务状态',
                 serviceStatus: '服务状态',
                 running: '运行中',
+                disconnected: '连接失败',
                 browserConnection: '浏览器连接',
                 serviceConfig: '服务配置',
                 streamingMode: '流式模式',
@@ -241,7 +270,7 @@
 
         let currentLang = localStorage.getItem('lang') || 'en';
 
-        function applyLanguage(lang) {
+        const applyLanguage = lang => {
             currentLang = lang;
             localStorage.setItem('lang', lang);
             document.documentElement.lang = lang;
@@ -254,30 +283,26 @@
                 }
             });
 
-            // Update language switcher button
-            const switcher = document.querySelector('.lang-switcher');
-            if (switcher) {
-                switcher.textContent = lang === 'en' ? '中文' : 'English';
-            }
-
             // Refresh content to apply translations
             updateContent();
-        }
+        };
 
-        function toggleLanguage() {
+        const toggleLanguage = () => {
             const newLang = currentLang === 'en' ? 'zh' : 'en';
             applyLanguage(newLang);
-        }
+        };
 
-        function t(key) {
-            return translations[currentLang][key] || key;
-        }
+        const t = key => translations[currentLang][key] || key;
 
         // ========== Original Features ==========
         const CURRENT_STREAMING_MODE = '{{streamingMode}}';
 
-        function updateContent() {
+        const updateContent = () => {
+            const dot = document.querySelector('.dot');
             fetch('/api/status').then(r => r.json()).then(data => {
+                // Update dot to green when connected
+                dot.className = 'dot status-running';
+
                 const statusPre = document.querySelector('#status-section pre');
                 const accountDetailsHtml = data.status.accountDetails.map(acc =>
                     '<span class="label" style="padding-left: 20px;">' + t('account') + ' ' + acc.index + '</span>: ' + acc.name
@@ -304,11 +329,19 @@
                 logTitle.innerHTML = '<span data-i18n="realtimeLogs">' + t('realtimeLogs') + '</span> (<span data-i18n="latestEntries">' + t('latestEntries') + '</span> ' + data.logCount + ' <span data-i18n="entries">' + t('entries') + '</span>)';
                 logContainer.innerText = data.logs;
                 if (isScrolledToBottom) { logContainer.scrollTop = logContainer.scrollHeight; }
-            }).catch(err => console.error('Error:', err));
+            }).catch(err => {
+                console.error('Error:', err);
+                // Update dot to red when connection fails
+                dot.className = 'dot status-error';
+
+                // Update service status to disconnected
+                const statusPre = document.querySelector('#status-section pre');
+                statusPre.innerHTML = '<span class="label">' + t('serviceStatus') + '</span>: <span class="status-error">' + t('disconnected') + '</span>';
+            });
         }
 
-        function switchSpecificAccount() {
-            const targetIndex = document.getElementById('accountIndexSelect').value;
+        const switchSpecificAccount = () => {
+            const targetIndex = document.getElementById('account-index-select').value;
             if (!confirm(t('confirmSwitch') + ' #' + targetIndex + '?')) return;
             fetch('/api/switch-account', {
                 method: 'POST',
@@ -319,7 +352,7 @@
                 .catch(err => { alert(t('operationInProgress')); updateContent(); });
         }
 
-        function toggleStreamingMode() {
+        const toggleStreamingMode = () => {
             const newMode = prompt(t('enterNewMode'), CURRENT_STREAMING_MODE);
             if (newMode === 'fake' || newMode === 'real') {
                 fetch('/api/set-mode', {
@@ -334,11 +367,11 @@
             }
         }
 
-        function toggleForceThinking() {
+        const toggleForceThinking = () => {
             fetch('/api/toggle-force-thinking', { method: 'POST' })
                 .then(res => res.text()).then(data => { alert(data); updateContent(); })
                 .catch(err => alert(t('settingFailed') + err));
-        }
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             applyLanguage(currentLang);

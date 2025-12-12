@@ -29,6 +29,13 @@
             margin-top: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
         }
 
         button {
@@ -40,11 +47,19 @@
             border-radius: 5px;
             margin-top: 20px;
             cursor: pointer;
+            line-height: 1.5;
+            min-height: 44px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
         }
 
         .error {
             color: red;
-            margin-top: 10px;
+            margin-top: 20px;
+            margin-bottom: 0;
         }
 
         .lang-switcher {
@@ -52,29 +67,50 @@
             top: 10px;
             right: 10px;
             background: transparent;
-            border: 1px solid #ddd;
+            border: none;
             color: #666;
-            padding: 5px 10px;
-            border-radius: 5px;
+            padding: 8px;
             cursor: pointer;
-            font-size: 0.85em;
             width: auto;
             margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
 
         .lang-switcher:hover {
-            background: #f5f5f5;
-            color: #333;
+            color: #007bff;
+            transform: scale(1.1);
+        }
+
+        .lang-switcher svg {
+            display: block;
         }
     </style>
 </head>
 
 <body>
     <form action="/login" method="post">
-        <button type="button" class="lang-switcher" onclick="toggleLanguage()">中文</button>
-        <h2 data-i18n="heading">Please enter API Key</h2>
-        <input type="password" name="apiKey" data-i18n-placeholder="apiKeyPlaceholder" placeholder="API Key" required autofocus>
-        <button type="submit" data-i18n="loginBtn">Login</button>
+        <button type="button" class="lang-switcher" onclick="toggleLanguage()" title="Switch Language">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m5 8 6 6"></path>
+                <path d="m4 14 6-6 2-3"></path>
+                <path d="M2 5h12"></path>
+                <path d="M7 2h1"></path>
+                <path d="m22 22-5-10-5 10"></path>
+                <path d="M14 18h6"></path>
+            </svg>
+        </button>
+        <h2 data-i18n="heading" style="color: rgb(50, 50, 50);">Please enter API Key</h2>
+        <div>
+            <input type="password" name="apiKey" data-i18n-placeholder="apiKeyPlaceholder" placeholder="API Key"
+                required autofocus>
+        </div>
+        <div>
+            <button type="submit" data-i18n="loginBtn">Login</button>
+        </div>
         {{errorMessage}}
     </form>
     <script>
@@ -98,7 +134,7 @@
         let currentLang = localStorage.getItem('lang') || 'en';
 
         // Apply language
-        function applyLanguage(lang) {
+        const applyLanguage = lang => {
             currentLang = lang;
             localStorage.setItem('lang', lang);
             document.documentElement.lang = lang;
@@ -118,24 +154,16 @@
                     el.placeholder = translations[lang][key];
                 }
             });
-
-            // Update language switcher button text
-            const switcher = document.querySelector('.lang-switcher');
-            if (switcher) {
-                switcher.textContent = lang === 'en' ? '中文' : 'English';
-            }
-        }
+        };
 
         // Toggle language
-        function toggleLanguage() {
+        const toggleLanguage = () => {
             const newLang = currentLang === 'en' ? 'zh' : 'en';
             applyLanguage(newLang);
-        }
+        };
 
         // Apply saved language on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            applyLanguage(currentLang);
-        });
+        document.addEventListener('DOMContentLoaded', () => applyLanguage(currentLang));
     </script>
 </body>
 
