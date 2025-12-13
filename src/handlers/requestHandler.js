@@ -264,7 +264,7 @@ class RequestHandler {
 
                 if (useRealStream) {
                     this.logger.info(`[Adapter] OpenAI streaming response (Real Mode) started...`);
-                    await this._streamOpenAIResponse(messageQueue, res, model);
+                    await this._streamOpenAIResponse(messageQueue, res, model, requestId);
                 } else {
                     this.logger.info(`[Adapter] OpenAI streaming response (Fake Mode) started...`);
                     let fullBody = "";
@@ -621,11 +621,32 @@ class RequestHandler {
         return fullBody;
     }
 
-    async _streamOpenAIResponse(messageQueue, res, model) {
+    async _streamOpenAIResponse(messageQueue, res, model, requestId) {
+        const streamState = { inThought: false };
         let streaming = true;
+
         while (streaming) {
             const message = await messageQueue.dequeue(30000);
             if (message.type === "STREAM_END") {
+                // Close thought tag if still in thought mode
+                if (streamState.inThought) {
+                    const closeThoughtPayload = {
+                        id: `chatcmpl-${requestId}`,
+                        object: "chat.completion.chunk",
+                        created: Math.floor(Date.now() / 1000),
+                        model,
+                        choices: [
+                            {
+                                index: 0,
+                                delta: { content: "\n</think>\n" },
+                                finish_reason: null,
+                            },
+                        ],
+                    };
+                    res.write(`data: ${JSON.stringify(closeThoughtPayload)}\n\n`);
+                    this.logger.info("[Adapter] Closed thought tag in streaming response.");
+                }
+
                 this.logger.info("[Request] Stream end signal received.");
                 res.write("data: [DONE]\n\n");
                 streaming = false;
@@ -634,7 +655,8 @@ class RequestHandler {
             if (message.data) {
                 const openAIChunk = this.formatConverter.translateGoogleToOpenAIStream(
                     message.data,
-                    model
+                    model,
+                    streamState
                 );
                 if (openAIChunk) {
                     res.write(openAIChunk);

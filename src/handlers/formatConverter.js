@@ -153,8 +153,11 @@ class FormatConverter {
 
     /**
      * Convert Google streaming response chunk to OpenAI format
+     * @param {string} googleChunk - The Google response chunk
+     * @param {string} modelName - The model name
+     * @param {object} streamState - Optional state object to track thought mode
      */
-    translateGoogleToOpenAIStream(googleChunk, modelName = "gemini-pro") {
+    translateGoogleToOpenAIStream(googleChunk, modelName = "gemini-pro", streamState = null) {
         if (!googleChunk || googleChunk.trim() === "") {
             return null;
         }
@@ -212,6 +215,10 @@ class FormatConverter {
                 for (const part of candidate.content.parts) {
                     if (part.thought === true) {
                         reasoningAccumulator += part.text || "";
+                        // Track thought mode for proper tag closing
+                        if (streamState) {
+                            streamState.inThought = true;
+                        }
                     } else {
                         contentAccumulator += part.text || "";
                     }
