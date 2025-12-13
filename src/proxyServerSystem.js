@@ -118,7 +118,12 @@ class ProxyServerSystem extends EventEmitter {
             // Note: /, /api/status use session authentication instead
             const whitelistPaths = ["/", "/favicon.ico", "/login", "/health", "/api/status", "/api/switch-account",
                 "/api/set-mode", "/api/toggle-force-thinking", "/api/toggle-force-web-search", "/api/toggle-force-url-context"];
-            if (whitelistPaths.includes(req.path)) {
+
+            // Skip authentication for static files
+            const staticPrefixes = ["/images/"];
+            const isStaticFile = staticPrefixes.some(prefix => req.path.startsWith(prefix));
+
+            if (whitelistPaths.includes(req.path) || isStaticFile) {
                 return next();
             }
 
@@ -231,6 +236,10 @@ class ProxyServerSystem extends EventEmitter {
 
         app.use(express.json({ limit: "100mb" }));
         app.use(express.urlencoded({ extended: true }));
+
+        // Serve static files from public directory (before authentication)
+        const path = require("path");
+        app.use(express.static(path.join(__dirname, "..", "public")));
 
         // Setup session and login
         this.webRoutes.setupSession(app);
