@@ -207,7 +207,7 @@ curl -X POST http://localhost:7860/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key-1" \
   -d '{
-    "model": "gemini-2.0-flash-exp",
+    "model": "gemini-2.5-flash",
     "messages": [
       {
         "role": "user",
@@ -221,7 +221,7 @@ curl -X POST http://localhost:7860/v1/chat/completions \
 ### ♊ Gemini 原生 API 格式
 
 ```bash
-curl -X POST http://localhost:7860/proxy/v1beta/models/gemini-2.0-flash-exp:generateContent \
+curl -X POST http://localhost:7860/proxy/v1beta/models/gemini-2.5-flash:generateContent \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key-1" \
   -d '{
@@ -241,11 +241,12 @@ curl -X POST http://localhost:7860/proxy/v1beta/models/gemini-2.0-flash-exp:gene
 ### 🌊 流式响应
 
 ```bash
+# OpenAI 兼容 API 流式响应
 curl -X POST http://localhost:7860/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-api-key-1" \
   -d '{
-    "model": "gemini-2.0-flash-exp",
+    "model": "gemini-2.5-flash",
     "messages": [
       {
         "role": "user",
@@ -253,6 +254,25 @@ curl -X POST http://localhost:7860/v1/chat/completions \
       }
     ],
     "stream": true
+  }'
+```
+
+```bash
+# Gemini 原生 API 流式响应
+curl -X POST http://localhost:7860/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-api-key-1" \
+  -d '{
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "写一首关于秋天的诗"
+          }
+        ]
+      }
+    ]
   }'
 ```
 
