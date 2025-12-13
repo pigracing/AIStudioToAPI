@@ -55,6 +55,15 @@ class RequestHandler {
         return this.authSwitcher.isSystemBusy;
     }
 
+    // Delegate methods to AuthSwitcher
+    async _switchToNextAuth() {
+        return this.authSwitcher.switchToNextAuth();
+    }
+
+    async _switchToSpecificAuth(targetIndex) {
+        return this.authSwitcher.switchToSpecificAuth(targetIndex);
+    }
+
     // Process standard Google API requests
     async processRequest(req, res) {
         const requestId = this._generateRequestId();

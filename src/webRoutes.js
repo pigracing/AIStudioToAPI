@@ -322,6 +322,9 @@ class WebRoutes {
             return { index, name };
         });
 
+        const currentAuthIndex = requestHandler.currentAuthIndex;
+        const currentAccountName = accountNameMap.get(currentAuthIndex) || "N/A";
+
         return {
             logCount: logs.length,
             logs: logs.join("\n"),
@@ -329,7 +332,8 @@ class WebRoutes {
                 accountDetails,
                 apiKeySource: config.apiKeySource,
                 browserConnected: !!browserManager.browser,
-                currentAuthIndex: requestHandler.currentAuthIndex,
+                currentAccountName,
+                currentAuthIndex,
                 failureCount: `${requestHandler.failureCount} / ${config.failureThreshold > 0 ? config.failureThreshold : "N/A"
                 }`,
                 forceThinking: this.serverSystem.forceThinking ? "✅ Enabled" : "❌ Disabled",
@@ -373,9 +377,15 @@ class WebRoutes {
             })
             .join("\n");
 
+        const currentAuthIndex = requestHandler.currentAuthIndex;
         const accountOptionsHtml = availableIndices
-            .map(index => `<option value="${index}">Account #${index}</option>`)
+            .map(index => {
+                const selected = index === currentAuthIndex ? " selected" : "";
+                return `<option value="${index}"${selected}>Account #${index}</option>`;
+            })
             .join("");
+
+        const currentAccountName = accountNameMap.get(currentAuthIndex) || "N/A";
 
         return this._loadTemplate("status.html", {
             accountDetailsHtml,
@@ -383,7 +393,8 @@ class WebRoutes {
             apiKeySource: config.apiKeySource,
             browserConnected: !!browserManager.browser,
             browserConnectedClass: browserManager.browser ? "status-ok" : "status-error",
-            currentAuthIndex: requestHandler.currentAuthIndex,
+            currentAccountName: this._escapeHtml(currentAccountName),
+            currentAuthIndex,
             failureCount: `${requestHandler.failureCount} / ${config.failureThreshold > 0 ? config.failureThreshold : "N/A"}`,
             forceThinking: this.serverSystem.forceThinking ? "✅ Enabled" : "❌ Disabled",
             forceUrlContext: this.serverSystem.forceUrlContext ? "✅ Enabled" : "❌ Disabled",

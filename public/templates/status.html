@@ -216,7 +216,7 @@
 <span class="label" data-i18n="forceUrlContext">Force URL Context</span>: {{forceUrlContext}}
 <span class="label" data-i18n="apiKey">API Key</span>: {{apiKeySource}}
 --- <span data-i18n="accountStatus">Account Status</span> ---
-<span class="label" data-i18n="currentAccount">Current Active Account</span>: #{{currentAuthIndex}}
+<span class="label" data-i18n="currentAccount">Current Active Account</span>: #{{currentAuthIndex}} ({{currentAccountName}})
 <span class="label" data-i18n="usageCount">Usage Count</span>: {{usageCount}}
 <span class="label" data-i18n="consecutiveFailures">Consecutive Failures</span>: {{failureCount}}
 <span class="label" data-i18n="totalScanned">Total Scanned Accounts</span>: {{totalScannedAccounts}}
@@ -297,7 +297,8 @@
                 immediateSwitchCodes: 'Immediate Switch (Codes)',
                 confirmSwitch: 'Are you sure you want to switch to account',
                 operationInProgress: 'Operation in progress...',
-                settingFailed: 'Setting failed: '
+                settingFailed: 'Setting failed: ',
+                alreadyCurrentAccount: 'This is already the current active account.'
             },
             zh: {
                 title: 'Google AI Studio 代理 - 服务状态',
@@ -327,7 +328,8 @@
                 immediateSwitchCodes: '立即切换（代码）',
                 confirmSwitch: '确定要切换到账户',
                 operationInProgress: '操作进行中...',
-                settingFailed: '设置失败：'
+                settingFailed: '设置失败：',
+                alreadyCurrentAccount: '当前已经是该账户，无需切换。'
             }
         };
 
@@ -368,6 +370,7 @@
                     forceWebSearchEnabled: false,
                     forceUrlContextEnabled: false,
                     isUpdating: false,
+                    currentAuthIndex: -1,
                 }
             },
             computed: {
@@ -472,6 +475,7 @@
                     this.forceThinkingEnabled = data.status.forceThinking.includes('Enabled');
                     this.forceWebSearchEnabled = data.status.forceWebSearch.includes('Enabled');
                     this.forceUrlContextEnabled = data.status.forceUrlContext.includes('Enabled');
+                    this.currentAuthIndex = data.status.currentAuthIndex;
                     this.$nextTick(() => {
                         this.isUpdating = false;
                     });
@@ -484,12 +488,14 @@
                 const initialThinking = '{{forceThinking}}';
                 const initialWebSearch = '{{forceWebSearch}}';
                 const initialUrlContext = '{{forceUrlContext}}';
+                const initialAuthIndex = '{{currentAuthIndex}}';
 
                 this.isUpdating = true;
                 this.streamingModeReal = initialMode === 'real';
                 this.forceThinkingEnabled = initialThinking === 'true' || initialThinking === true;
                 this.forceWebSearchEnabled = initialWebSearch === 'true' || initialWebSearch === true;
                 this.forceUrlContextEnabled = initialUrlContext === 'true' || initialUrlContext === true;
+                this.currentAuthIndex = parseInt(initialAuthIndex, 10);
 
                 this.$nextTick(() => {
                     this.isUpdating = false;
@@ -523,7 +529,7 @@
                     '<span class="label">' + t('immediateSwitchCodes') + '</span>: ' + data.status.immediateSwitchStatusCodes + '\n' +
                     '<span class="label">' + t('apiKey') + '</span>: ' + data.status.apiKeySource + '\n' +
                     '--- ' + t('accountStatus') + ' ---\n' +
-                    '<span class="label">' + t('currentAccount') + '</span>: #' + data.status.currentAuthIndex + '\n' +
+                    '<span class="label">' + t('currentAccount') + '</span>: #' + data.status.currentAuthIndex + ' (' + data.status.currentAccountName + ')\n' +
                     '<span class="label">' + t('usageCount') + '</span>: ' + data.status.usageCount + '\n' +
                     '<span class="label">' + t('consecutiveFailures') + '</span>: ' + data.status.failureCount + '\n' +
                     '<span class="label">' + t('totalScanned') + '</span>: ' + data.status.initialIndices + '\n' +
@@ -548,7 +554,14 @@
         }
 
         const switchSpecificAccount = () => {
-            const targetIndex = document.getElementById('account-index-select').value;
+            const targetIndex = parseInt(document.getElementById('account-index-select').value, 10);
+
+            // Check if target account is the same as current account
+            if (vueApp && vueApp.currentAuthIndex === targetIndex) {
+                ElementPlus.ElMessage.warning(t('alreadyCurrentAccount'));
+                return;
+            }
+
             ElementPlus.ElMessageBox.confirm(
                 t('confirmSwitch') + ' #' + targetIndex + '?',
                 {
@@ -558,13 +571,32 @@
                 }
             )
                 .then(() => {
+                    const loading = ElementPlus.ElLoading.service({
+                        lock: true,
+                        text: 'Switching account, please wait...',
+                        background: 'rgba(0, 0, 0, 0.7)'
+                    });
+
                     fetch('/api/switch-account', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ targetIndex: parseInt(targetIndex, 10) })
+                        body: JSON.stringify({ targetIndex: targetIndex })
                     })
-                        .then(res => res.text()).then(data => { ElementPlus.ElMessage.success(data); updateContent(); })
-                        .catch(err => { ElementPlus.ElMessage.info(t('operationInProgress')); updateContent(); });
+                        .then(async res => {
+                            const data = await res.text();
+                            loading.close();
+                            if (res.ok) {
+                                ElementPlus.ElMessage.success(data);
+                            } else {
+                                ElementPlus.ElMessage.error(data);
+                            }
+                            updateContent();
+                        })
+                        .catch(err => {
+                            loading.close();
+                            ElementPlus.ElMessage.error(t('settingFailed') + (err.message || err));
+                            updateContent();
+                        });
                 })
                 .catch(() => {
                     // User cancelled
