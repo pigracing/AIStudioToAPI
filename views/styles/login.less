@@ -29,10 +29,11 @@ form {
 input {
     border: 1px solid @border-color;
     border-radius: @border-radius-sm;
+    box-sizing: border-box;
     margin-top: @spacing-sm;
     padding: @spacing-sm;
     transition: all @transition-normal;
-    width: @input-width;
+    width: 100%;
 
     &:focus {
         border-color: @primary-color;

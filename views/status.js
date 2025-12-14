@@ -103,6 +103,44 @@ const toggleLanguage = () => {
     applyLanguage(newLang);
 };
 
+const handleLogout = () => {
+    const { ElMessageBox, ElMessage } = ElementPlus;
+    ElMessageBox.confirm(
+        currentLang === 'zh' ? '确定要登出吗？' : 'Are you sure you want to logout?',
+        {
+            cancelButtonText: currentLang === 'zh' ? '取消' : 'Cancel',
+            confirmButtonText: currentLang === 'zh' ? '确定' : 'OK',
+            lockScroll: false,
+            type: 'warning',
+        }
+    )
+        .then(() => {
+            fetch('/logout', {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                method: 'POST',
+            })
+                .then(response => {
+                    if (response.ok) {
+                        ElMessage.success(currentLang === 'zh' ? '登出成功' : 'Logout successful');
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 500);
+                    } else {
+                        ElMessage.error(currentLang === 'zh' ? '登出失败' : 'Logout failed');
+                    }
+                })
+                .catch(err => {
+                    console.error('Logout error:', err);
+                    ElMessage.error(currentLang === 'zh' ? '登出时发生错误' : 'Error during logout');
+                });
+        })
+        .catch(() => {
+            // User canceled, do nothing
+        });
+};
+
 const t = key => translations[currentLang][key] || key;
 
 // ========== Vue App ==========

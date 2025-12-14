@@ -36,6 +36,7 @@ module.exports = {
                 toggleLanguage: 'readonly',
                 switchSpecificAccount: 'readonly',
                 updateContent: 'readonly',
+                handleLogout: 'readonly',
             },
             rules: {
                 'quotes': ['error', 'single', {
@@ -46,7 +47,7 @@ module.exports = {
                     vars: 'all',
                     args: 'after-used',
                     ignoreRestSiblings: true,
-                    varsIgnorePattern: '^(toggleLanguage|switchSpecificAccount|updateContent)$',
+                    varsIgnorePattern: '^(toggleLanguage|switchSpecificAccount|updateContent|handleLogout)$',
                 }],
             },
         },

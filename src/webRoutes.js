@@ -126,6 +126,7 @@ class WebRoutes {
             res.send(loginHtml);
         });
 
+        // Login endpoint with rate limiting
         app.post("/login", (req, res) => {
             const ip = this._getClientIP(req);
             const now = Date.now();
@@ -177,6 +178,21 @@ class WebRoutes {
 
                 res.redirect("/login?error=1");
             }
+        });
+
+        // Logout endpoint
+        const isAuthenticated = this.isAuthenticated.bind(this);
+        app.post("/logout", isAuthenticated, (req, res) => {
+            const ip = this._getClientIP(req);
+            req.session.destroy(err => {
+                if (err) {
+                    this.logger.error(`[Auth] Session destruction failed for IP ${ip}: ${err.message}`);
+                    return res.status(500).json({ error: "Logout failed" });
+                }
+                this.logger.info(`[Auth] User logged out from IP: ${ip}`);
+                res.clearCookie("connect.sid");
+                res.status(200).json({ success: true });
+            });
         });
     }
 

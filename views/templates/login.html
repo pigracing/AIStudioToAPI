@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="title">Google AI Studio Proxy - Login</title>
     <link rel="stylesheet" href="/styles/login.css">
 </head>
@@ -20,13 +21,15 @@
                 <path d="M14 18h6"></path>
             </svg>
         </button>
-        <h2 data-i18n="heading" style="color: rgb(50, 50, 50);">Please enter API Key</h2>
-        <div>
-            <input type="password" name="apiKey" data-i18n-placeholder="apiKeyPlaceholder" placeholder="API Key"
-                required autofocus>
-        </div>
-        <div>
-            <button type="submit" data-i18n="loginBtn">Login</button>
+        <div style="width: 280px;">
+            <h2 data-i18n="heading" style="color: rgb(50, 50, 50);">Please enter API Key</h2>
+            <div>
+                <input type="password" name="apiKey" data-i18n-placeholder="apiKeyPlaceholder" placeholder="API Key"
+                    required autofocus>
+            </div>
+            <div>
+                <button type="submit" data-i18n="loginBtn">Login</button>
+            </div>
         </div>
         {{errorMessageHtml}}
     </form>
