@@ -231,50 +231,71 @@ class RequestHandler {
         const messageQueue = this.connectionRegistry.createMessageQueue(requestId);
 
         try {
-            this._forwardRequest(proxyRequest);
-            const initialMessage = await messageQueue.dequeue();
+            if (useRealStream) {
+                this._forwardRequest(proxyRequest);
+                const initialMessage = await messageQueue.dequeue();
 
-            if (initialMessage.event_type === "error") {
-                this.logger.error(
-                    `[Adapter] Received error from browser, will trigger switching logic. Status code: ${initialMessage.status}, message: ${initialMessage.message}`
-                );
-                await this.authSwitcher.handleRequestFailureAndSwitch(
-                    initialMessage,
-                    msg => this._sendErrorChunkToClient(res, msg)
-                );
-                if (isOpenAIStream) {
-                    if (!res.writableEnded) {
-                        res.write("data: [DONE]\n\n");
-                        res.end();
-                    }
-                } else {
+                if (initialMessage.event_type === "error") {
+                    this.logger.error(
+                        `[Adapter] Received error from browser, will trigger switching logic. Status code: ${initialMessage.status}, message: ${initialMessage.message}`
+                    );
+
+                    // Send standard HTTP error response
                     this._sendErrorResponse(
                         res,
                         initialMessage.status || 500,
                         initialMessage.message
                     );
+
+                    // Handle account switch without sending callback to client (response is closed)
+                    await this.authSwitcher.handleRequestFailureAndSwitch(initialMessage, null);
+                    return;
                 }
-                return;
-            }
 
-            if (this.authSwitcher.failureCount > 0) {
-                this.logger.info(
-                    `✅ [Auth] OpenAI interface request successful - failure count reset from ${this.authSwitcher.failureCount} to 0`
-                );
-                this.authSwitcher.failureCount = 0;
-            }
+                if (this.authSwitcher.failureCount > 0) {
+                    this.logger.info(
+                        `✅ [Auth] OpenAI interface request successful - failure count reset from ${this.authSwitcher.failureCount} to 0`
+                    );
+                    this.authSwitcher.failureCount = 0;
+                }
 
-            if (isOpenAIStream) {
                 res.status(200).set({
                     "Cache-Control": "no-cache",
                     Connection: "keep-alive",
                     "Content-Type": "text/event-stream",
                 });
+                this.logger.info(`[Adapter] OpenAI streaming response (Real Mode) started...`);
+                await this._streamOpenAIResponse(messageQueue, res, model, requestId);
+            } else {
+                const result = await this._executeRequestWithRetries(proxyRequest, messageQueue);
 
-                if (useRealStream) {
-                    this.logger.info(`[Adapter] OpenAI streaming response (Real Mode) started...`);
-                    await this._streamOpenAIResponse(messageQueue, res, model, requestId);
-                } else {
+                if (!result.success) {
+                    // Send standard HTTP error response for both streaming and non-streaming
+                    // if the error happens before the stream starts.
+                    this._sendErrorResponse(
+                        res,
+                        result.error.status || 500,
+                        result.error.message
+                    );
+
+                    // Handle account switch without sending callback to client
+                    await this.authSwitcher.handleRequestFailureAndSwitch(result.error, null);
+                    return;
+                }
+
+                if (this.authSwitcher.failureCount > 0) {
+                    this.logger.info(
+                        `✅ [Auth] OpenAI interface request successful - failure count reset to 0`
+                    );
+                    this.authSwitcher.failureCount = 0;
+                }
+
+                if (isOpenAIStream) { // Fake stream
+                    res.status(200).set({
+                        "Cache-Control": "no-cache",
+                        Connection: "keep-alive",
+                        "Content-Type": "text/event-stream",
+                    });
                     this.logger.info(`[Adapter] OpenAI streaming response (Fake Mode) started...`);
                     let fullBody = "";
                     let streaming = true;
@@ -286,19 +307,16 @@ class RequestHandler {
                         }
                         if (message.data) fullBody += message.data;
                     }
-
                     const translatedChunk = this.formatConverter.translateGoogleToOpenAIStream(
                         fullBody,
                         model
                     );
-                    if (translatedChunk) {
-                        res.write(translatedChunk);
-                    }
+                    if (translatedChunk) res.write(translatedChunk);
                     res.write("data: [DONE]\n\n");
                     this.logger.info("[Adapter] Fake mode: Complete content sent at once.");
+                } else { // Non-stream
+                    await this._sendOpenAINonStreamResponse(messageQueue, res, model);
                 }
-            } else {
-                await this._sendOpenAINonStreamResponse(messageQueue, res, model);
             }
         } catch (error) {
             this._handleRequestError(error, res);
@@ -350,50 +368,10 @@ class RequestHandler {
         scheduleNextKeepAlive();
 
         try {
-            this._forwardRequest(proxyRequest);
-            let requestFailed = false;
-            let lastMessage = null;
+            const result = await this._executeRequestWithRetries(proxyRequest, messageQueue);
 
-            for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
-                lastMessage = await messageQueue.dequeue();
-
-                if (lastMessage.event_type === "timeout") {
-                    lastMessage = {
-                        event_type: "error",
-                        message: lastMessage.message,
-                        status: 504,
-                    };
-                }
-
-                if (lastMessage.event_type === "error") {
-                    if (
-                        !(
-                            lastMessage.message
-                            && lastMessage.message.includes("The user aborted a request")
-                        )
-                    ) {
-                        this.logger.warn(
-                            `[Request] Attempt #${attempt} failed: Received ${lastMessage.status || "unknown"
-                            } error - ${lastMessage.message}`
-                        );
-                    }
-
-                    if (attempt < this.maxRetries) {
-                        await new Promise(resolve =>
-                            setTimeout(resolve, this.retryDelay)
-                        );
-                        continue;
-                    }
-                    requestFailed = true;
-                }
-                break;
-            }
-
-            if (requestFailed) {
-                if (
-                    lastMessage.message
-                    && lastMessage.message.includes("The user aborted a request")
-                ) {
+            if (!result.success) {
+                if (result.error.message?.includes("The user aborted a request")) {
                     this.logger.info(
                         `[Request] Request #${proxyRequest.request_id} was properly cancelled by user, not counted in failure statistics.`
                     );
@@ -401,14 +379,16 @@ class RequestHandler {
                     this.logger.error(
                         `[Request] All ${this.maxRetries} retries failed, will be counted in failure statistics.`
                     );
-                    await this.authSwitcher.handleRequestFailureAndSwitch(
-                        lastMessage,
-                        msg => this._sendErrorChunkToClient(res, msg)
-                    );
-                    this._sendErrorChunkToClient(
+
+                    // Send standard HTTP error response
+                    this._sendErrorResponse(
                         res,
-                        `Request finally failed: ${lastMessage.message}`
+                        result.error.status || 500,
+                        result.error.message
                     );
+
+                    // Handle account switch without sending callback to client
+                    await this.authSwitcher.handleRequestFailureAndSwitch(result.error, null);
                 }
                 return;
             }
@@ -542,28 +522,38 @@ class RequestHandler {
 
     async _handleNonStreamResponse(proxyRequest, messageQueue, res) {
         this.logger.info(`[Request] Entering non-stream processing mode...`);
-        this._forwardRequest(proxyRequest);
 
         try {
-            const headerMessage = await messageQueue.dequeue();
-            if (headerMessage.event_type === "error") {
-                if (headerMessage.message?.includes("The user aborted a request")) {
+            const result = await this._executeRequestWithRetries(proxyRequest, messageQueue);
+
+            if (!result.success) {
+                // If retries failed, handle the failure (e.g., switch account)
+                if (result.error.message?.includes("The user aborted a request")) {
                     this.logger.info(
                         `[Request] Request #${proxyRequest.request_id} was properly cancelled by user.`
                     );
                 } else {
                     this.logger.error(
-                        `[Request] Browser returned error: ${headerMessage.message}`
+                        `[Request] Browser returned error after retries: ${result.error.message}`
                     );
-                    await this.authSwitcher.handleRequestFailureAndSwitch(headerMessage, null);
+                    await this.authSwitcher.handleRequestFailureAndSwitch(result.error, null);
                 }
                 return this._sendErrorResponse(
                     res,
-                    headerMessage.status || 500,
-                    headerMessage.message
+                    result.error.status || 500,
+                    result.error.message
                 );
             }
 
+            // On success, reset failure count if needed
+            if (proxyRequest.is_generative && this.authSwitcher.failureCount > 0) {
+                this.logger.info(
+                    `✅ [Auth] Non-stream generation request successful - failure count reset from ${this.authSwitcher.failureCount} to 0`
+                );
+                this.authSwitcher.failureCount = 0;
+            }
+
+            const headerMessage = result.message;
             let fullBody = "";
             let receiving = true;
             while (receiving) {
@@ -576,13 +566,6 @@ class RequestHandler {
                 if (message.event_type === "chunk" && message.data) {
                     fullBody += message.data;
                 }
-            }
-
-            if (proxyRequest.is_generative && this.authSwitcher.failureCount > 0) {
-                this.logger.info(
-                    `✅ [Auth] Non-stream generation request successful - failure count reset from ${this.authSwitcher.failureCount} to 0`
-                );
-                this.authSwitcher.failureCount = 0;
             }
 
             // Intelligent image processing
@@ -646,6 +629,63 @@ class RequestHandler {
             );
         }
         return fullBody;
+    }
+
+    async _executeRequestWithRetries(proxyRequest, messageQueue) {
+        let lastError = null;
+
+        for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+            try {
+                this._forwardRequest(proxyRequest);
+
+                const initialMessage = await messageQueue.dequeue();
+
+                if (initialMessage.event_type === "timeout") {
+                    throw new Error(JSON.stringify({
+                        event_type: "error",
+                        message: "Request timed out waiting for browser response.",
+                        status: 504,
+                    }));
+                }
+
+                if (initialMessage.event_type === "error") {
+                    // Throw a structured error to be caught by the catch block
+                    throw new Error(JSON.stringify(initialMessage));
+                }
+
+                // Success, return the initial message
+                return { message: initialMessage, success: true };
+            } catch (error) {
+                // Parse the structured error message
+                let errorPayload;
+                try {
+                    errorPayload = JSON.parse(error.message);
+                } catch (e) {
+                    errorPayload = { message: error.message, status: 500 };
+                }
+
+                lastError = errorPayload;
+
+                // Log the warning for the current attempt
+                this.logger.warn(
+                    `[Request] Attempt #${attempt}/${this.maxRetries} for request #${proxyRequest.request_id} failed: ${errorPayload.message}`
+                );
+
+                // If it's the last attempt, break the loop to return failure
+                if (attempt >= this.maxRetries) {
+                    this.logger.error(
+                        `[Request] All ${this.maxRetries} retries failed for request #${proxyRequest.request_id}. Final error: ${errorPayload.message}`
+                    );
+                    break;
+                }
+
+                // Wait before the next retry
+                await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+            }
+        }
+
+        // After all retries, return the final failure result
+        return { error: lastError, success: false };
     }
 
     async _streamOpenAIResponse(messageQueue, res, model, requestId) {

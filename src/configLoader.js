@@ -56,10 +56,10 @@ class ConfigLoader {
             config.streamingMode = process.env.STREAMING_MODE;
         if (process.env.FAILURE_THRESHOLD)
             config.failureThreshold
-                = parseInt(process.env.FAILURE_THRESHOLD, 10) || config.failureThreshold;
+                = parseInt(process.env.FAILURE_THRESHOLD, 10) ?? config.failureThreshold;
         if (process.env.SWITCH_ON_USES)
             config.switchOnUses
-                = parseInt(process.env.SWITCH_ON_USES, 10) || config.switchOnUses;
+                = parseInt(process.env.SWITCH_ON_USES, 10) ?? config.switchOnUses;
         if (process.env.MAX_RETRIES)
             config.maxRetries
                 = parseInt(process.env.MAX_RETRIES, 10) || config.maxRetries;
