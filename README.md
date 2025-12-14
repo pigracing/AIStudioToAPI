@@ -42,7 +42,7 @@ npm start
 
 The API server will be available at `http://localhost:7860`
 
-### 🌐 Server Deployment (Linux VPS)
+### ☁ Cloud Deployment (Linux VPS)
 
 For production deployment on a server (Linux VPS), you need to extract authentication credentials from a Windows machine first.
 
@@ -138,85 +138,9 @@ sudo docker compose down
 
 ##### 🌐 Step 3 (Optional): Nginx Reverse Proxy
 
-If you need to access via a domain name or want unified management at the reverse proxy layer (e.g., configure HTTPS, load balancing, etc.), you can use Nginx. Here's the recommended configuration:
+If you need to access via a domain name or want unified management at the reverse proxy layer (e.g., configure HTTPS, load balancing, etc.), you can use Nginx.
 
-Create an Nginx configuration file `/etc/nginx/sites-available/aistudio-api`:
-
-```nginx
-server {
-    listen 80;
-    listen [::]:80;  # IPv6 support
-    server_name your-domain.com;  # Replace with your domain
-
-    # For HTTPS, uncomment the following lines and configure SSL certificates
-    # listen 443 ssl http2;
-    # listen [::]:443 ssl http2;  # IPv6 HTTPS
-    # ssl_certificate /path/to/your/certificate.crt;
-    # ssl_certificate_key /path/to/your/private.key;
-
-    # Client request body size limit (0 = unlimited)
-    client_max_body_size 0;
-
-    location / {
-        # Reverse proxy to Docker container
-        proxy_pass http://127.0.0.1:7860;
-
-        # Critical: Pass real client IP
-        # X-Real-IP: Highest priority, contains the real client IP
-        proxy_set_header X-Real-IP $remote_addr;
-        
-        # X-Forwarded-For: Contains the complete proxy chain
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        
-        # Other necessary proxy headers
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # Timeout settings (adapted for long-running AI requests)
-        proxy_connect_timeout 600s;
-        proxy_send_timeout 600s;
-        proxy_read_timeout 600s;
-
-        # Disable buffering to support streaming responses
-        proxy_buffering off;
-    }
-}
-```
-
-Enable the configuration and restart Nginx:
-
-```bash
-# Create symbolic link to enable site
-sudo ln -s /etc/nginx/sites-available/aistudio-api /etc/nginx/sites-enabled/
-
-# Test if configuration is correct
-sudo nginx -t
-
-# Restart Nginx
-sudo systemctl restart nginx
-```
-
-**⚠ Multi-layer Proxy Configuration (Important)**:
-
-If using multiple Nginx proxies (e.g., Client -> Public Gateway -> Internal Gateway -> App), inner proxies **should NOT override** `X-Real-IP`:
-
-```nginx
-# Inner Nginx (internal gateway) configuration example
-location / {
-    proxy_pass http://127.0.0.1:7860;
-    
-    # Critical: Pass through upstream X-Real-IP, do NOT override with $remote_addr
-    proxy_set_header X-Real-IP $http_x_real_ip;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    # ... other settings
-}
-```
-
-**Tips**:
-
-- If you configured HTTPS, it's recommended to set environment variable `SECURE_COOKIES=true` to enable secure cookies
-- If using HTTP only, keep `SECURE_COOKIES=false` (default) or leave it unset
-- Only use `proxy_set_header X-Real-IP $remote_addr;` at the **outermost public-facing gateway**, inner proxies should use `$http_x_real_ip` to pass through
+ > 📖 For detailed Nginx configuration instructions, see: [Nginx Reverse Proxy Configuration](docs/en/nginx-setup.md)
 
 ## 📡 API Usage
 
@@ -235,111 +159,40 @@ This endpoint is forwarded to the official Gemini API format endpoint.
 *   `POST /models/{model_name}:generateContent`: Generate content.
 *   `POST /models/{model_name}:streamGenerateContent`: Stream content generation, supports real and fake streaming.
 
-<details>
-  <summary><h3>Usage Examples</h3></summary>
+> 📖 For detailed API usage examples, see: [API Usage Examples](docs/en/api-examples.md)
 
-#### 🤖 OpenAI-Compatible API
-
-```bash
-curl -X POST http://localhost:7860/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key-1" \
-  -d '{
-    "model": "gemini-2.5-flash-lite",
-    "messages": [
-      {
-        "role": "user",
-        "content": "Hello, how are you?"
-      }
-    ],
-    "stream": false
-  }'
-```
-
-#### ♊ Gemini Native API Format
-
-```bash
-curl -X POST http://localhost:7860/v1beta/models/gemini-2.5-flash-lite:generateContent \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key-1" \
-  -d '{
-    "contents": [
-      {
-        "role": "user",
-        "parts": [
-          {
-            "text": "Hello, how are you?"
-          }
-        ]
-      }
-    ]
-  }'
-```
-
-#### 🌊 Streaming Response
-
-```bash
-# OpenAI Compatible Streaming Response
-curl -X POST http://localhost:7860/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key-1" \
-  -d '{
-    "model": "gemini-2.5-flash-lite",
-    "messages": [
-      {
-        "role": "user",
-        "content": "Write a short poem about autumn"
-      }
-    ],
-    "stream": true
-  }'
-```
-
-```bash
-# Gemini Native API Streaming Response
-curl -X POST http://localhost:7860/v1beta/models/gemini-2.5-flash-lite:streamGenerateContent?alt=sse \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key-1" \
-  -d '{
-    "contents": [
-      {
-        "role": "user",
-        "parts": [
-          {
-            "text": "Write a short poem about autumn"
-          }
-        ]
-      }
-    ]
-  }'
-```
-
-</details>
-
-## ⚙️ Configuration
+## 🧰 Configuration
 
 ### 🔧 Environment Variables
 
+#### 📱 Application Configuration
+
 | Variable | Description | Default |
 | :--- | :--- | :--- |
-| **Application Configuration** | | |
 | `API_KEYS` | Comma-separated list of valid API keys for authentication. | `123456` |
 | `PORT` | API server port. | `7860` |
 | `HOST` | Server listening host address. | `0.0.0.0` |
 | `ICON_URL` | Custom favicon URL for the console. Supports ICO, PNG, SVG, etc. | `/AIStudio_icon.svg` |
-| **Security Settings** | | |
 | `SECURE_COOKIES` | Enable secure cookies. `true` for HTTPS only, `false` for both HTTP and HTTPS. | `false` |
-| **Model Invocation Features** | | |
-| `STREAMING_MODE` | Streaming mode. `real` for true streaming, `fake` for simulated streaming. | `real` |
-| `FORCE_THINKING` | Force enable thinking mode for all requests. | `false` |
-| `FORCE_WEB_SEARCH` | Force enable web search for all requests. | `false` |
-| `FORCE_URL_CONTEXT` | Force enable URL context for all requests. | `false` |
-| **Automatic Account Switching & Retries** | | |
+
+#### 🌐 Proxy Configuration
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
 | `MAX_RETRIES` | Maximum number of retries for failed requests. | `3` |
 | `RETRY_DELAY` | Delay between retries in milliseconds. | `2000` |
 | `SWITCH_ON_USES` | Number of requests before automatically switching accounts (0 to disable). | `40` |
 | `FAILURE_THRESHOLD` | Number of consecutive failures before switching accounts (0 to disable). | `3` |
 | `IMMEDIATE_SWITCH_STATUS_CODES` | HTTP status codes that trigger immediate account switching (comma-separated). | `429,503` |
+
+#### 🗒️ Other Configuration
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `STREAMING_MODE` | Streaming mode. `real` for true streaming, `fake` for simulated streaming. | `real` |
+| `FORCE_THINKING` | Force enable thinking mode for all requests. | `false` |
+| `FORCE_WEB_SEARCH` | Force enable web search for all requests. | `false` |
+| `FORCE_URL_CONTEXT` | Force enable URL context for all requests. | `false` |
 
 ### 🧠 Model Configuration
 

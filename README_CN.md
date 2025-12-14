@@ -42,7 +42,7 @@ npm start
 
 API 服务将在 `http://localhost:7860` 上运行。
 
-### 🌐 服务器部署（Linux VPS）
+### ☁ 云端部署（Linux VPS）
 
 在生产环境中部署到服务器（Linux VPS）时，需要先从 Windows 机器中提取身份验证凭据。
 
@@ -79,7 +79,7 @@ scp configs/auth/auth-*.json user@your-server:/path/to/deployment/configs/auth/
 
 5. 现在可以从 Windows 机器中删除克隆的仓库了。
 
-#### 🚢 步骤 2：在服务器上部署
+#### 🚢 步骤 2：部署到服务器
 
 ##### 🐋 方式 1：Docker 命令
 
@@ -138,84 +138,9 @@ sudo docker compose down
 
 ##### 🌐 步骤 3（可选）：使用 Nginx 反向代理
 
-如果需要通过域名访问或希望在反向代理层统一管理（例如配置 HTTPS、负载均衡等），可以使用 Nginx。以下是推荐的配置：
+如果需要通过域名访问或希望在反向代理层统一管理（例如配置 HTTPS、负载均衡等），可以使用 Nginx。
 
-创建 Nginx 配置文件 `/etc/nginx/sites-available/aistudio-api`：
-
-```nginx
-server {
-    listen 80;
-    listen [::]:80;  # IPv6 支持
-    server_name your-domain.com;  # 替换为你的域名
-
-    # 如果使用 HTTPS，取消注释以下行并配置 SSL 证书
-    # listen 443 ssl http2;
-    # listen [::]:443 ssl http2;  # IPv6 HTTPS
-    # ssl_certificate /path/to/your/certificate.crt;
-    # ssl_certificate_key /path/to/your/private.key;
-
-    # 客户端请求体大小的限制（0 = 不限制）
-    client_max_body_size 0;
-
-    location / {
-        # 反向代理到 Docker 容器
-        proxy_pass http://127.0.0.1:7860;
-
-        # X-Real-IP: 传递真实客户端 IP
-        proxy_set_header X-Real-IP $remote_addr;
-        
-        # X-Forwarded-For: 包含完整的代理链
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        
-        # 其他必要的代理头
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # 超时设置（适配长时间运行的 AI 请求）
-        proxy_connect_timeout 600s;
-        proxy_send_timeout 600s;
-        proxy_read_timeout 600s;
-
-        # 禁用缓冲区以支持流式响应
-        proxy_buffering off;
-    }
-}
-```
-
-启用配置并重启 Nginx：
-
-```bash
-# 创建符号链接以启用站点
-sudo ln -s /etc/nginx/sites-available/aistudio-api /etc/nginx/sites-enabled/
-
-# 检查一下配置是否正确
-sudo nginx -t
-
-# 重启 Nginx
-sudo systemctl restart nginx
-```
-
-**⚠ 多层代理配置（重要）**：
-
-如果使用多层 Nginx 代理（例如：客户端 -> 公网网关 -> 内网网关 -> 应用），内层代理**不应覆盖** `X-Real-IP`：
-
-```nginx
-# 内层 Nginx（内网网关）配置示例
-location / {
-    proxy_pass http://127.0.0.1:7860;
-    
-    # 关键：透传上游的 X-Real-IP，不要用 $remote_addr 覆盖
-    proxy_set_header X-Real-IP $http_x_real_ip;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    # ... 其他配置
-}
-```
-
-**提示**：
-
-- 如果配置了 HTTPS，建议设置环境变量 `SECURE_COOKIES=true` 以启用安全 Cookie
-- 如果只使用 HTTP，保持 `SECURE_COOKIES=false`（默认值）或不设置此变量
-- 仅在**最外层公网入口**使用 `proxy_set_header X-Real-IP $remote_addr;`，内层代理使用 `$http_x_real_ip` 透传
+ > 📖 详细的 Nginx 配置说明请参阅：[Nginx 反向代理配置文档](docs/zh/nginx-setup.md)
 
 ## 📡 使用 API
 
@@ -234,111 +159,40 @@ location / {
 *   `POST /models/{model_name}:generateContent`: 生成内容。
 *   `POST /models/{model_name}:streamGenerateContent`: 流式生成内容，支持真流式和假流式。
 
-<details>
-  <summary><h3>使用示例</h3></summary>
+> 📖 详细的 API 使用示例请参阅：[API 使用示例文档](docs/zh/api-examples.md)
 
-#### 🤖 OpenAI 兼容 API
-
-```bash
-curl -X POST http://localhost:7860/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key-1" \
-  -d '{
-    "model": "gemini-2.5-flash-lite",
-    "messages": [
-      {
-        "role": "user",
-        "content": "你好，最近怎么样？"
-      }
-    ],
-    "stream": false
-  }'
-```
-
-#### ♊ Gemini 原生 API 格式
-
-```bash
-curl -X POST http://localhost:7860/v1beta/models/gemini-2.5-flash-lite:generateContent \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key-1" \
-  -d '{
-    "contents": [
-      {
-        "role": "user",
-        "parts": [
-          {
-            "text": "你好，最近怎么样？"
-          }
-        ]
-      }
-    ]
-  }'
-```
-
-#### 🌊 流式响应
-
-```bash
-# OpenAI 兼容 API 流式响应
-curl -X POST http://localhost:7860/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key-1" \
-  -d '{
-    "model": "gemini-2.5-flash-lite",
-    "messages": [
-      {
-        "role": "user",
-        "content": "写一首关于秋天的诗"
-      }
-    ],
-    "stream": true
-  }'
-```
-
-```bash
-# Gemini 原生 API 流式响应
-curl -X POST http://localhost:7860/v1beta/models/gemini-2.5-flash-lite:streamGenerateContent?alt=sse \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key-1" \
-  -d '{
-    "contents": [
-      {
-        "role": "user",
-        "parts": [
-          {
-            "text": "写一首关于秋天的诗"
-          }
-        ]
-      }
-    ]
-  }'
-```
-
-</details>
-
-## ⚙️ 相关配置
+## 🧰 相关配置
 
 ### 🔧 环境变量
 
-| 变量名 | 描述 | 默认值                  |
-| :--- | :--- |:---------------------|
-| **应用配置** | |                      |
-| `API_KEYS` | 用于身份验证的有效 API 密钥列表（使用逗号分隔） | `123456`               |
-| `PORT` | API 服务器端口 | `7860`               |
-| `HOST` | 服务器监听主机地址 | `0.0.0.0`            |
-| `ICON_URL` | 自定义控制台的 favicon 图标 URL。支持 ICO, PNG, SVG 等格式。 | `/AIStudio_icon.svg` |
-| **安全设置** | |                      |
-| `SECURE_COOKIES` | 是否启用安全 Cookie。`true` 表示仅 HTTPS，`false` 表示 HTTP 和 HTTPS。 | `false`              |
-| **模型调用功能** | |                      |
-| `STREAMING_MODE` | 流式传输模式。`real` 为真实流式，`fake` 为模拟流式。 | `real`               |
-| `FORCE_THINKING` | 强制为所有请求启用思考模式。 | `false`              |
-| `FORCE_WEB_SEARCH` | 强制为所有请求启用网络搜索。 | `false`              |
-| `FORCE_URL_CONTEXT` | 强制为所有请求启用 URL 上下文。 | `false`              |
-| **自动账户切换与重试** | |                      |
-| `MAX_RETRIES` | 请求失败后的最大重试次数。 | `3`                  |
-| `RETRY_DELAY` | 两次重试之间的延迟（毫秒）。 | `2000`               |
-| `SWITCH_ON_USES` | 自动切换帐户前的请求次数（0 禁用）。 | `40`                 |
-| `FAILURE_THRESHOLD` | 切换帐户前的连续失败次数（0 禁用）。 | `3`                  |
-| `IMMEDIATE_SWITCH_STATUS_CODES` | 触发立即切换帐户的 HTTP 状态码（逗号分隔）。 | `429,503`            |
+#### 📱 应用配置
+
+| 变量名 | 描述 | 默认值 |
+| :--- | :--- | :--- |
+| `API_KEYS` | 用于身份验证的有效 API 密钥列表（使用逗号分隔）。 | `123456` |
+| `PORT` | API 服务器端口。 | `7860` |
+| `HOST` | 服务器监听的主机地址。 | `0.0.0.0` |
+| `ICON_URL` | 用于自定义控制台的 favicon 图标。支持 ICO, PNG, SVG 等格式。 | `/AIStudio_icon.svg` |
+| `SECURE_COOKIES` | 是否启用安全 Cookie。`true` 表示仅支持 HTTPS 协议访问控制台。 | `false` |
+
+#### 🌐 代理配置
+
+| 变量名 | 描述 | 默认值 |
+| :--- | :--- | :--- |
+| `MAX_RETRIES` | 请求失败后的最大重试次数。 | `3` |
+| `RETRY_DELAY` | 两次重试之间的间隔（毫秒）。 | `2000` |
+| `SWITCH_ON_USES` | 自动切换帐户前允许的请求次数（0 禁用）。 | `40` |
+| `FAILURE_THRESHOLD` | 切换帐户前允许的连续失败次数（0 禁用）。 | `3` |
+| `IMMEDIATE_SWITCH_STATUS_CODES` | 触发立即切换帐户的 HTTP 状态码（逗号分隔）。 | `429,503` |
+
+#### 🗒️ 其他配置
+
+| 变量名 | 描述 | 默认值 |
+| :--- | :--- | :--- |
+| `STREAMING_MODE` | 流式传输模式。`real` 为真实流式，`fake` 为模拟流式。 | `real` |
+| `FORCE_THINKING` | 强制为所有请求启用思考模式。 | `false` |
+| `FORCE_WEB_SEARCH` | 强制为所有请求启用网络搜索。 | `false` |
+| `FORCE_URL_CONTEXT` | 强制为所有请求启用 URL 上下文。 | `false` |
 
 ### 🧠 模型列表配置
 
