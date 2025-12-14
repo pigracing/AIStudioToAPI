@@ -71,6 +71,7 @@ COPY --chown=node:node src ./src
 COPY --chown=node:node configs ./configs
 COPY --chown=node:node scripts ./scripts
 COPY --chown=node:node views ./views
+COPY --chown=node:node public ./public
 
 # Build CSS files from LESS sources
 RUN npm run build:css
