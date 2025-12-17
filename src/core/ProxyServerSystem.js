@@ -320,12 +320,8 @@ class ProxyServerSystem extends EventEmitter {
         // Serve locales for front-end only translations
         app.use("/locales", express.static(path.join(__dirname, "..", "..", "ui", "locales")));
 
-        // Setup session and login
+        // Setup session and all routes (auth, status, and auth creation)
         this.webRoutes.setupSession(app);
-        this.webRoutes.setupAuthRoutes(app);
-
-        // Setup status pages and API
-        this.webRoutes.setupStatusRoutes(app);
 
         // API authentication middleware
         app.use(this._createAuthMiddleware());
