@@ -4,15 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Binding</title>
-    <link rel="stylesheet" href="/styles/nav.css">
     <link rel="stylesheet" href="/styles/account_binding.css">
+    <style>
+        .back-button {
+            display: inline-block;
+            padding: 10px 15px;
+            margin-bottom: 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-family: sans-serif;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <nav class="nav-bar">
-        <a href="/" class="nav-link">Status</a>
-        <a href="/account_binding" class="nav-link active">Account Binding</a>
-    </nav>
     <div class="container">
+        <a href="/" class="back-button">Back to Home</a>
         <h1>Visual Account Binding</h1>
         <p class="session-notice">
             <strong>Note:</strong> This VNC session is temporary and will automatically close after 10 minutes of inactivity or after saving.

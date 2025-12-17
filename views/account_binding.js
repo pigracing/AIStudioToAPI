@@ -102,7 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(error => {
                     console.error('Error starting VNC session:', error);
-                    vncContainer.innerHTML = `<p style="color: red;"><b>Failed to start VNC session:</b> ${error.message}.<br><br>This feature requires Linux with <code>Xvfb</code>, <code>x11vnc</code>, and <code>websockify</code> installed.</p><p><button onclick="location.reload()">Retry</button></p>`;
+                    vncContainer.innerHTML = `
+                        <div style="padding: 20px; text-align: center; color: red;">
+                            <p style="font-size: 1.2em; margin-bottom: 10px;"><b>Failed to start VNC session</b></p>
+                            <p style="margin-bottom: 10px;">${error.message}</p>
+                            <p style="color:gray; font-size: 0.9em; margin-bottom: 20px;">This feature requires Linux with <code>Xvfb</code>, <code>x11vnc</code>, and <code>websockify</code> installed.</p>
+                            <button onclick="location.reload()" style="padding: 10px 20px; font-size: 1em; cursor: pointer;">Reload Page</button>
+                        </div>`;
                 });
         })
         .catch(err => {
