@@ -54,6 +54,7 @@
     "cancel": "取消",
     "confirmDelete": "确定要删除账号",
     "confirmSwitch": "确定要切换到账号",
+    "connecting": "连接中",
     "consecutiveFailures": "连续失败次数",
     "currentAccount": "当前活跃账号",
     "custom": "自定义",

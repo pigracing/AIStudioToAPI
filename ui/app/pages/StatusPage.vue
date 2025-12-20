@@ -15,12 +15,7 @@
             style="position: fixed; right: 20px; bottom: 20px; z-index: 999"
         >
             <div class="floating-actions">
-                <button
-                    class="floating-btn lang-switcher"
-                    :title="t('switchLanguage')"
-                    :disabled="isBusy"
-                    @click="toggleLanguage"
-                >
+                <button class="floating-btn lang-switcher" :title="t('switchLanguage')" @click="toggleLanguage">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
@@ -40,12 +35,7 @@
                         <path d="M14 18h6" />
                     </svg>
                 </button>
-                <button
-                    class="floating-btn logout-button"
-                    :title="t('logout')"
-                    :disabled="isBusy"
-                    @click="handleLogout"
-                >
+                <button class="floating-btn logout-button" :title="t('logout')" @click="handleLogout">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
@@ -66,12 +56,7 @@
         </el-affix>
 
         <div class="status-container">
-            <button
-                class="desktop-btn lang-switcher"
-                :title="t('switchLanguage')"
-                :disabled="isBusy"
-                @click="toggleLanguage"
-            >
+            <button class="desktop-btn lang-switcher" :title="t('switchLanguage')" @click="toggleLanguage">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -91,7 +76,7 @@
                     <path d="M14 18h6" />
                 </svg>
             </button>
-            <button class="desktop-btn logout-button" :title="t('logout')" :disabled="isBusy" @click="handleLogout">
+            <button class="desktop-btn logout-button" :title="t('logout')" @click="handleLogout">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -304,9 +289,19 @@ const apiKeySourceText = computed(() => {
     return translated === key ? state.apiKeySource : translated || state.apiKeySource;
 });
 
-const browserConnectedClass = computed(() => (state.browserConnected ? "status-ok" : "status-error"));
+const browserConnectedClass = computed(() => {
+    if (state.isSystemBusy) {
+        return "status-warning";
+    }
+    return state.browserConnected ? "status-ok" : "status-error";
+});
 
-const browserConnectedText = computed(() => (state.browserConnected ? t("running") : t("disconnected")));
+const browserConnectedText = computed(() => {
+    if (state.isSystemBusy) {
+        return t("connecting");
+    }
+    return state.browserConnected ? t("running") : t("disconnected");
+});
 
 const currentAccountName = computed(() => {
     if (state.currentAuthIndex < 0) {
@@ -732,6 +727,11 @@ pre {
 
 .status-ok {
     color: @success-color;
+    font-weight: bold;
+}
+
+.status-warning {
+    color: @warning-color;
     font-weight: bold;
 }
 
