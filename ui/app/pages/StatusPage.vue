@@ -171,6 +171,7 @@
                         </svg>
                     </button>
                     <button
+                        class="btn-danger"
                         :disabled="isBusy || state.selectedAccount === null"
                         :title="t('btnDeleteUser')"
                         @click="deleteUser"
@@ -919,9 +920,14 @@ pre {
             opacity: 0.5;
         }
 
-        // Delete button uses error color on hover
-        &:last-child:hover:not(:disabled) {
+        // Danger button uses error color on hover
+        &.btn-danger:hover:not(:disabled) {
             color: @error-color;
+        }
+
+        // Primary button uses primary color on hover (already default)
+        &.btn-primary:hover:not(:disabled) {
+            color: @primary-color;
         }
     }
 }
