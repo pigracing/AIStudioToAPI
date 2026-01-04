@@ -31,22 +31,39 @@ class BrowserManager {
         // Added for background wakeup logic from new core
         this.noButtonCount = 0;
 
-        // Optimized launch arguments for low-memory Docker/cloud environments
-        this.launchArgs = [
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-infobars",
-            "--disable-background-networking",
-            "--disable-default-apps",
-            "--disable-extensions",
-            "--disable-sync",
-            "--disable-translate",
-            "--metrics-recording-only",
-            "--mute-audio",
-            "--safebrowsing-disable-auto-update",
-        ];
+        // Firefox/Camoufox does not use Chromium-style command line args.
+        // We keep this empty; Camoufox has its own anti-fingerprinting optimizations built-in.
+        this.launchArgs = [];
+
+        // Firefox-specific preferences for optimization (passed to firefox.launch)
+        this.firefoxUserPrefs = {
+            "app.update.enabled": false, // Disable auto updates
+            "browser.cache.disk.enable": false, // Disable disk cache
+            "browser.ping-centre.telemetry": false, // Disable ping telemetry
+            "browser.safebrowsing.enabled": false, // Disable safe browsing
+            "browser.safebrowsing.malware.enabled": false, // Disable malware check
+            "browser.safebrowsing.phishing.enabled": false, // Disable phishing check
+            "browser.search.update": false, // Disable search engine auto-update
+            "browser.shell.checkDefaultBrowser": false, // Skip default browser check
+            "browser.tabs.warnOnClose": false, // No warning on closing tabs
+            "datareporting.policy.dataSubmissionEnabled": false, // Disable data reporting
+            "dom.webnotifications.enabled": false, // Disable notifications
+            "extensions.update.enabled": false, // Disable extension auto-update
+            "general.smoothScroll": false, // Disable smooth scrolling
+            "gfx.webrender.all": false, // Disable WebRender (GPU-based renderer)
+            "layers.acceleration.disabled": true, // Disable GPU hardware acceleration
+            "media.autoplay.default": 5, // 5 = Block all autoplay
+            "media.volume_scale": "0.0", // Mute audio
+            "network.dns.disablePrefetch": true, // Disable DNS prefetching
+            "network.http.speculative-parallel-limit": 0, // Disable speculative connections
+            "network.prefetch-next": false, // Disable link prefetching
+            "permissions.default.geo": 0, // 0 = Always deny geolocation
+            "services.sync.enabled": false, // Disable Firefox Sync
+            "toolkit.cosmeticAnimations.enabled": false, // Disable UI animations
+            "toolkit.telemetry.archive.enabled": false, // Disable telemetry archive
+            "toolkit.telemetry.enabled": false, // Disable telemetry
+            "toolkit.telemetry.unified": false, // Disable unified telemetry
+        };
 
         if (this.config.browserExecutablePath) {
             this.browserExecutablePath = this.config.browserExecutablePath;
@@ -500,8 +517,8 @@ class BrowserManager {
                 ...process.env,
                 ...extraArgs.env,
             },
-
             executablePath: this.browserExecutablePath,
+            firefoxUserPrefs: this.firefoxUserPrefs,
             headless: false,
         });
 
@@ -544,6 +561,7 @@ class BrowserManager {
             this.browser = await firefox.launch({
                 args: this.launchArgs,
                 executablePath: this.browserExecutablePath,
+                firefoxUserPrefs: this.firefoxUserPrefs,
                 headless: true, // Main browser is always headless
             });
             this.browser.on("disconnected", () => {

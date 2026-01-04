@@ -117,6 +117,7 @@ class CreateAuth {
                 "-nopw",
                 "-shared",
                 "-quiet",
+                "-repeat",
             ]);
             x11vnc.stderr.on("data", data => {
                 const msg = data.toString();
@@ -182,17 +183,8 @@ class CreateAuth {
 
             this.logger.info("[VNC] Launching browser for VNC session...");
             const { browser, context } = await this.serverSystem.browserManager.launchBrowserForVNC({
-                args: [
-                    `--window-size=${screenWidth},${screenHeight}`,
-                    "--start-fullscreen",
-                    "--kiosk",
-                    "--no-first-run",
-                    "--disable-infobars",
-                    "--disable-session-crashed-bubble",
-                ],
                 env: { DISPLAY: display },
                 isMobile,
-                viewport: { height: screenHeight, width: screenWidth },
             });
             sessionResources.browser = browser;
             sessionResources.context = context;
@@ -228,8 +220,8 @@ class CreateAuth {
             `);
 
             await page.goto("https://aistudio.google.com/", {
-                timeout: 60000,
-                waitUntil: "networkidle",
+                timeout: 120000,
+                waitUntil: "domcontentloaded",
             });
             sessionResources.page = page;
 
