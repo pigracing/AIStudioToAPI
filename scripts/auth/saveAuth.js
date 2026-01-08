@@ -8,10 +8,20 @@
 
 const { firefox } = require("playwright");
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 
 // --- Configuration Constants ---
-const browserExecutablePath = path.join(__dirname, "..", "..", "camoufox", "camoufox.exe");
+const getDefaultBrowserExecutablePath = () => {
+    const platform = os.platform();
+    if (platform === "linux") return path.join(__dirname, "..", "..", "camoufox-linux", "camoufox");
+    if (platform === "win32") return path.join(__dirname, "..", "..", "camoufox", "camoufox.exe");
+    if (platform === "darwin")
+        return path.join(__dirname, "..", "..", "camoufox-macos", "Camoufox.app", "Contents", "MacOS", "camoufox");
+    return null;
+};
+
+const browserExecutablePath = process.env.CAMOUFOX_EXECUTABLE_PATH || getDefaultBrowserExecutablePath();
 const VALIDATION_LINE_THRESHOLD = 200; // Validation line threshold
 const CONFIG_DIR = "configs/auth"; // Authentication files directory
 
@@ -58,6 +68,13 @@ const getNextAuthIndex = () => {
 
     console.log(`▶️  Preparing to create new authentication file for account #${newIndex}...`);
     console.log(`▶️  Launching browser: ${browserExecutablePath}`);
+
+    if (!browserExecutablePath || !fs.existsSync(browserExecutablePath)) {
+        console.error("❌ Camoufox executable not found.");
+        console.error(`   -> Checked: ${browserExecutablePath || "(null)"}`);
+        console.error('   -> Please run "npm run setup-auth" first, or set CAMOUFOX_EXECUTABLE_PATH.');
+        process.exit(1);
+    }
 
     const browser = await firefox.launch({
         executablePath: browserExecutablePath,

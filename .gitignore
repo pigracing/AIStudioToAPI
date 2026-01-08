@@ -16,6 +16,8 @@ package-lock.json
 
 # Camoufox browser
 camoufox/
+camoufox-linux/
+camoufox-macos/
 camoufox*.zip
 
 # Authentication files

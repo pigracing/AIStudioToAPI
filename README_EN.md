@@ -17,18 +17,18 @@ A tool that wraps Google AI Studio web interface to provide OpenAI API and Gemin
 
 ## 🚀 Quick Start
 
-### 💻 Local Development (Windows Only)
+### 💻 Local Development (Windows / macOS / Linux)
 
 1. Clone the repository:
 
-```powershell
+```bash
 git clone https://github.com/iBenzene/AIStudioToAPI.git
 cd AIStudioToAPI
 ```
 
 2. Run the setup script:
 
-```powershell
+```bash
 npm run setup-auth
 ```
 
@@ -40,8 +40,7 @@ This script will:
 
 3. Start the service:
 
-```powershell
-npm install
+```bash
 npm start
 ```
 
@@ -49,7 +48,7 @@ The API server will be available at `http://localhost:7860`
 
 After the service starts, you can access `http://localhost:7860` in your browser to open the web console homepage, where you can view account status and service status.
 
-> ⚠ **Note:** Windows local deployment does not support adding accounts via VNC online. You need to use the `npm run setup-auth` script to add accounts. VNC login is only available in Docker deployments on Linux servers.
+> ⚠ **Note:** Local deployment does not support adding accounts via VNC online. You need to use the `npm run setup-auth` script to add accounts. VNC login is only available in Docker deployments on Linux servers.
 
 ### ☁ Cloud Deployment (Linux VPS)
 
@@ -131,7 +130,7 @@ After deployment, you need to add Google accounts using one of these methods:
 
 **Method 2: Upload Auth Files**
 
-- Run `npm run setup-auth` on a Windows machine to generate auth files
+- Run `npm run setup-auth` on your local machine to generate auth files
 - In the web console, click "Upload Auth" to upload the auth JSON file, or manually upload to the mounted `/path/to/auth` directory
 
 > 💡 **Tip**: You can also download auth files from an existing server and upload them to a new server. Click the "Download Auth" button for the corresponding account in the web console to download the auth file.
