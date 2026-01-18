@@ -19,36 +19,35 @@
 
 1. 克隆仓库：
 
-```bash
-git clone https://github.com/iBUHub/AIStudioToAPI.git
-cd AIStudioToAPI
-```
+   ```bash
+   git clone https://github.com/iBUHub/AIStudioToAPI.git
+   cd AIStudioToAPI
+   ```
 
 2. 运行快速设置脚本：
 
-```bash
-npm run setup-auth
-```
+   ```bash
+   npm run setup-auth
+   ```
 
-该脚本将：
-
-- 自动下载 Camoufox 浏览器（一个注重隐私的 Firefox 分支）
-- 启动浏览器并自动导航到 AI Studio
-- 在本地保存您的身份验证凭据
+   该脚本将：
+   - 自动下载 Camoufox 浏览器（一个注重隐私的 Firefox 分支）
+   - 启动浏览器并自动导航到 AI Studio
+   - 在本地保存您的身份验证凭据
 
 3. 配置环境变量（可选）：
 
-复制根目录下的 `.env.example` 为 `.env`，并在 `.env` 中按需修改配置（如端口、API 密钥等）。
+   复制根目录下的 `.env.example` 为 `.env`，并在 `.env` 中按需修改配置（如端口、API 密钥等）。
 
 4. 启动服务：
 
-```bash
-npm start
-```
+   ```bash
+   npm start
+   ```
 
-API 服务将在 `http://localhost:7860` 上运行。
+   API 服务将在 `http://localhost:7860` 上运行。
 
-服务启动后，您可以在浏览器中访问 `http://localhost:7860` 打开 Web 控制台主页，在这里可以查看账号状态和服务状态。
+   服务启动后，您可以在浏览器中访问 `http://localhost:7860` 打开 Web 控制台主页，在这里可以查看账号状态和服务状态。
 
 > ⚠ **注意：** 直接运行不支持通过 VNC 在线添加账号，需要使用 `npm run setup-auth` 脚本添加账号。当前 VNC 登录功能仅在 Docker 容器中可用。
 
@@ -125,22 +124,22 @@ sudo docker compose down
 
 1. 构建镜像：
 
-```bash
-docker build -t aistudio-to-api .
-```
+   ```bash
+   docker build -t aistudio-to-api .
+   ```
 
 2. 运行容器：
 
-```bash
-docker run -d \
-  --name aistudio-to-api \
-  -p 7860:7860 \
-  -v /path/to/auth:/app/configs/auth \
-  -e API_KEYS=your-api-key-1,your-api-key-2 \
-  -e TZ=Asia/Shanghai \
-  --restart unless-stopped \
-  aistudio-to-api
-```
+   ```bash
+   docker run -d \
+     --name aistudio-to-api \
+     -p 7860:7860 \
+     -v /path/to/auth:/app/configs/auth \
+     -e API_KEYS=your-api-key-1,your-api-key-2 \
+     -e TZ=Asia/Shanghai \
+     --restart unless-stopped \
+     aistudio-to-api
+   ```
 
 #### 🔑 步骤 2：账号管理
 

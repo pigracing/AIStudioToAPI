@@ -19,36 +19,35 @@ A tool that wraps Google AI Studio web interface to provide OpenAI API and Gemin
 
 1. Clone the repository:
 
-```bash
-git clone https://github.com/iBUHub/AIStudioToAPI.git
-cd AIStudioToAPI
-```
+   ```bash
+   git clone https://github.com/iBUHub/AIStudioToAPI.git
+   cd AIStudioToAPI
+   ```
 
 2. Run the setup script:
 
-```bash
-npm run setup-auth
-```
+   ```bash
+   npm run setup-auth
+   ```
 
-This script will:
-
-- Automatically download the Camoufox browser (a privacy-focused Firefox fork)
-- Launch the browser and navigate to AI Studio automatically
-- Save your authentication credentials locally
+   This script will:
+   - Automatically download the Camoufox browser (a privacy-focused Firefox fork)
+   - Launch the browser and navigate to AI Studio automatically
+   - Save your authentication credentials locally
 
 3. Configure Environment Variables (Optional):
 
-Copy `.env.example` in the root directory to `.env`, and modify settings in `.env` as needed (e.g., port, API Key).
+   Copy `.env.example` in the root directory to `.env`, and modify settings in `.env` as needed (e.g., port, API Key).
 
 4. Start the service:
 
-```bash
-npm start
-```
+   ```bash
+   npm start
+   ```
 
-The API server will be available at `http://localhost:7860`
+   The API server will be available at `http://localhost:7860`
 
-After the service starts, you can access `http://localhost:7860` in your browser to open the web console homepage, where you can view account status and service status.
+   After the service starts, you can access `http://localhost:7860` in your browser to open the web console homepage, where you can view account status and service status.
 
 > ⚠ **Note:** Running directly does not support adding accounts via VNC online. You need to use the `npm run setup-auth` script to add accounts. VNC login is only available in Docker deployments.
 
@@ -125,22 +124,22 @@ If you prefer to build the Docker image yourself, you can use the following comm
 
 1. Build the image:
 
-```bash
-docker build -t aistudio-to-api .
-```
+   ```bash
+   docker build -t aistudio-to-api .
+   ```
 
 2. Run the container:
 
-```bash
-docker run -d \
-  --name aistudio-to-api \
-  -p 7860:7860 \
-  -v /path/to/auth:/app/configs/auth \
-  -e API_KEYS=your-api-key-1,your-api-key-2 \
-  -e TZ=Asia/Shanghai \
-  --restart unless-stopped \
-  aistudio-to-api
-```
+   ```bash
+   docker run -d \
+     --name aistudio-to-api \
+     -p 7860:7860 \
+     -v /path/to/auth:/app/configs/auth \
+     -e API_KEYS=your-api-key-1,your-api-key-2 \
+     -e TZ=Asia/Shanghai \
+     --restart unless-stopped \
+     aistudio-to-api
+   ```
 
 #### 🔑 Step 2: Account Management
 
