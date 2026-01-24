@@ -14,7 +14,7 @@
                     class="menu-item"
                     :class="{ active: activeTab === 'home' }"
                     :title="t('statusHeading')"
-                    @click="activeTab = 'home'"
+                    @click="switchTab('home')"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -35,7 +35,7 @@
                     class="menu-item"
                     :class="{ active: activeTab === 'settings' }"
                     :title="t('actionsPanel')"
-                    @click="activeTab = 'settings'"
+                    @click="switchTab('settings')"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -58,7 +58,7 @@
                     class="menu-item"
                     :class="{ active: activeTab === 'logs' }"
                     :title="t('realtimeLogs')"
-                    @click="activeTab = 'logs'"
+                    @click="switchTab('logs')"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -1004,6 +1004,26 @@ const t = (key, options) => {
     return I18n.t(key, options);
 };
 
+const switchTab = tabName => {
+    if (activeTab.value === "logs") {
+        const logContainer = document.getElementById("log-container");
+        if (logContainer) {
+            state.logScrollTop = logContainer.scrollTop;
+        }
+    }
+
+    activeTab.value = tabName;
+
+    if (tabName === "logs") {
+        nextTick(() => {
+            const logContainer = document.getElementById("log-container");
+            if (logContainer) {
+                logContainer.scrollTop = state.logScrollTop || 0;
+            }
+        });
+    }
+};
+
 const { theme, setTheme } = useTheme();
 
 const state = reactive({
@@ -1025,6 +1045,7 @@ const state = reactive({
     latestVersion: null,
     logCount: 0,
     logs: t("loading"),
+    logScrollTop: 0,
     releaseUrl: null,
     serviceConnected: false,
     streamingModeReal: false,
@@ -2160,7 +2181,7 @@ watchEffect(() => {
 
     &.is-expanded {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateX(-30px);
     }
 }
 
