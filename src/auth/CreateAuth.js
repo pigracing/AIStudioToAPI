@@ -375,23 +375,24 @@ class CreateAuth {
                 })();
             `);
 
-            try {
-                await this._runWithSignal(
-                    page.goto("https://aistudio.google.com/", {
+            await this._runWithSignal(
+                page
+                    .goto("https://aistudio.google.com/", {
                         timeout: 120000,
                         waitUntil: "domcontentloaded",
+                    })
+                    .catch(e => {
+                        // Swallow "Target closed" error if it happens during abort/cleanup
+                        if (
+                            e.message.includes("closed") ||
+                            e.message.includes("Target page, context or browser has been closed")
+                        ) {
+                            return null;
+                        }
+                        throw e;
                     }),
-                    signal
-                );
-            } catch (err) {
-                // If the session was aborted, Playwright might throw "Target page... closed"
-                // which is expected behavior as we just killed the browser.
-                if (signal.aborted && err.message.includes("closed")) {
-                    this.logger.debug("[VNC] Ignored 'page closed' error during abort.");
-                } else {
-                    throw err;
-                }
-            }
+                signal
+            );
             sessionResources.page = page;
             checkAborted();
 
