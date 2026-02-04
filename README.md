@@ -9,7 +9,7 @@
 - 🔄 **API 兼容性**：同时兼容 OpenAI API、Gemini API 和 Anthropic API 格式
 - 🌐 **网页自动化**：使用浏览器自动化技术与 AI Studio 网页界面交互
 - 🔐 **身份验证**：基于 API 密钥的安全认证机制
-- 🔧 **支持工具调用**：OpenAI 和 Gemini 接口均支持 Tool Calls (Function Calling)
+- 🔧 **支持工具调用**：OpenAI、Gemini 和 Anthropic 接口均支持 Tool Calls (Function Calling)
 - 📝 **模型支持**：通过 AI Studio 访问各种 Gemini 模型，包括生图模型和 TTS 语音合成模型
 - 🎨 **主页展示控制**：提供可视化的 Web 控制台，支持账号管理、VNC 登录等操作
 
