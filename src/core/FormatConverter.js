@@ -217,7 +217,8 @@ class FormatConverter {
                 continue;
             }
 
-            // Handle anyOf specially (only when it is a schema keyword)
+            // Handle anyOf specially (only when it is a schema keyword),
+            // but `{"type":"OBJECT","properties":{"isNewTopic":{"type":"BOOLEAN"},"title":{"anyOf":[{"type":"STRING"},{"type":"NULL"}]}},"required":["isNewTopic","title"]}` is right, need to confirm
             if (key === "anyOf" && !isProperties) {
                 if (Array.isArray(obj[key])) {
                     const variants = obj[key];
@@ -1444,8 +1445,12 @@ class FormatConverter {
                 }
 
                 if (schema) {
+                    this.logger.debug(`[Adapter] Debug: Converting Claude JSON Schema: ${JSON.stringify(schema)}`);
                     generationConfig.responseMimeType = "application/json";
                     generationConfig.responseSchema = this._convertSchemaToGemini(schema, true);
+                    this.logger.debug(
+                        `[Adapter] Debug: Converted Gemini JSON Schema: ${JSON.stringify(generationConfig.responseSchema)}`
+                    );
                     this.logger.info(
                         `[Adapter] Converted Claude output_format to Gemini responseSchema. Name: ${schemaName}`
                     );
@@ -1462,8 +1467,12 @@ class FormatConverter {
         if (claudeBody.output_config && claudeBody.output_config.format) {
             const format = claudeBody.output_config.format;
             if (format.type === "json_schema" && format.schema) {
+                this.logger.debug(`[Adapter] Debug: Converting Claude JSON Schema: ${JSON.stringify(format.schema)}`);
                 generationConfig.responseMimeType = "application/json";
                 generationConfig.responseSchema = this._convertSchemaToGemini(format.schema, true);
+                this.logger.debug(
+                    `[Adapter] Debug: Converted Gemini JSON Schema: ${JSON.stringify(generationConfig.responseSchema)}`
+                );
                 this.logger.info(
                     `[Adapter] Converted Claude output_config to Gemini responseSchema. Title: ${format.schema.title || "untitled"}`
                 );
