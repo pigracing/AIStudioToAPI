@@ -4,7 +4,7 @@
 
 ## 📦 部署步骤
 
-1. **登录**：前往 [https://us-west-1.run.claw.cloud/](https://us-west-1.run.claw.cloud/) 并登录你的账号。
+1. **登录**：前往 [https://us-west-1.run.claw.cloud](https://us-west-1.run.claw.cloud) 并登录你的账号。
 2. **创建应用**：进入 **App Launchpad**，点击右上角的 **Create App** 按钮。
 3. **配置应用**：填写以下参数：
    - **Application Name**：填写一个你喜欢的英文名称（例如 `aistudio-api`）。
@@ -64,6 +64,7 @@
 
 - **OpenAI 兼容 Base URL**: `https://<your-public-address>/v1`
 - **Gemini 兼容 Base URL**: `https://<your-public-address>/v1beta`
+- **Anthropic 兼容 Base URL**: `https://<your-public-address>/v1`
 
 > 更多详细信息，请参考主 README 中的 [使用 API](../../README.md#-使用-api) 章节。
 

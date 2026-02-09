@@ -64,6 +64,7 @@ After deployment, you can access the API using the public domain combined with t
 
 - **OpenAI Compatible Base URL**: `https://<your-public-domain>/v1`
 - **Gemini Compatible Base URL**: `https://<your-public-domain>/v1beta`
+- **Anthropic Compatible Base URL**: `https://<your-public-domain>/v1`
 
 > For more details, please refer to the [API Usage](../../README_EN.md#-api-usage) section in the main README.
 

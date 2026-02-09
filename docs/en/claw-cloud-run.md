@@ -4,7 +4,7 @@ This guide will help you deploy the `aistudio-to-api` service on [Claw Cloud Run
 
 ## 📦 Deployment Steps
 
-1. **Login**: Go to [https://us-west-1.run.claw.cloud/](https://us-west-1.run.claw.cloud/) and log in to your account.
+1. **Login**: Go to [https://us-west-1.run.claw.cloud](https://us-west-1.run.claw.cloud) and log in to your account.
 2. **Create App**: Navigate to **App Launchpad** and click the **Create App** button in the top right corner.
 3. **Configure Application**: Fill in the following parameters:
    - **Application Name**: Enter any name you prefer (e.g., `aistudio-api`).
@@ -64,6 +64,7 @@ After deployment, you can access the API using the **Public Address** combined w
 
 - **OpenAI Compatible Base URL**: `https://<your-public-address>/v1`
 - **Gemini Compatible Base URL**: `https://<your-public-address>/v1beta`
+- **Anthropic Compatible Base URL**: `https://<your-public-address>/v1`
 
 > For more details, please refer to the [API Usage](../../README_EN.md#-api-usage) section in the main README.
 

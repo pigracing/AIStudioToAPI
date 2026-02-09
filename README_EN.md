@@ -35,7 +35,7 @@ A tool that wraps Google AI Studio web interface to provide OpenAI API, Gemini A
    - Launch the browser and navigate to AI Studio automatically
    - Save your authentication credentials locally
 
-   > 💡 **Tip:** If downloading the Camoufox browser fails or takes too long, you can [manually download it from here](https://github.com/daijro/camoufox/releases/tag/v135.0.1-beta.24), and set the environment variable `CAMOUFOX_EXECUTABLE_PATH` to the path of the browser executable (both absolute and relative paths are supported).
+   > 💡 **Tip:** If downloading the Camoufox browser fails or takes too long, you can manually download it from [here](https://github.com/daijro/camoufox/releases/tag/v135.0.1-beta.24), and set the environment variable `CAMOUFOX_EXECUTABLE_PATH` to the path of the browser executable (both absolute and relative paths are supported).
 
 3. Configure Environment Variables (Optional):
 

@@ -64,6 +64,7 @@
 
 - **OpenAI 兼容 Base URL**: `https://<your-public-domain>/v1`
 - **Gemini 兼容 Base URL**: `https://<your-public-domain>/v1beta`
+- **Anthropic 兼容 Base URL**: `https://<your-public-domain>/v1`
 
 > 更多详细信息，请参考主 README 中的 [使用 API](../../README.md#-使用-api) 章节。
 
