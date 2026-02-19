@@ -54,6 +54,7 @@
             "temperature": 1.0,
             "topP": 0.95,
             "topK": 64,
+            "modelStage": "LEGACY",
             "maxTemperature": 2.0,
             "thinking": true
         },
@@ -99,7 +100,6 @@
             "temperature": 1.0,
             "topP": 0.95,
             "topK": 64,
-            "modelStage": "LEGACY",
             "maxTemperature": 2.0,
             "thinking": true
         },
@@ -239,6 +239,25 @@
             "version": "3-flash-preview-12-2025",
             "displayName": "Gemini 3 Flash Preview",
             "description": "Gemini 3 Flash Preview",
+            "inputTokenLimit": 1048576,
+            "outputTokenLimit": 65536,
+            "supportedGenerationMethods": [
+                "generateContent",
+                "countTokens",
+                "createCachedContent",
+                "batchGenerateContent"
+            ],
+            "temperature": 1.0,
+            "topP": 0.95,
+            "topK": 64,
+            "maxTemperature": 2.0,
+            "thinking": true
+        },
+        {
+            "name": "models/gemini-3.1-pro-preview",
+            "version": "3.1-pro-preview-01-2026",
+            "displayName": "Gemini 3.1 Pro Preview",
+            "description": "Gemini 3.1 Pro Preview",
             "inputTokenLimit": 1048576,
             "outputTokenLimit": 65536,
             "supportedGenerationMethods": [
